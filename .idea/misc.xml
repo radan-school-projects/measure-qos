@@ -3,7 +3,11 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/activity_drawer_base.xml" value="0.16" />
         <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/activity_iperf.xml" value="0.25" />
+        <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/content_layout.xml" value="0.18" />
+        <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/main_drawer_header.xml" value="0.18" />
+        <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/menu/main_drawer_menu.xml" value="0.1" />
       </map>
     </option>
   </component>
