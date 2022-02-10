@@ -1,11 +1,15 @@
 package com.mem.mqos
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import com.mem.mqos.databinding.ActivityIperfBinding
 
-class IperfActivity : AppCompatActivity() {
+class IperfActivity : DrawerBaseActivity() {
+  private lateinit var activityIperfBinding: ActivityIperfBinding
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_iperf)
+    activityIperfBinding = ActivityIperfBinding.inflate(layoutInflater)
+    setContentView(activityIperfBinding.root)
+    this.allocateActivityTitle("${getString(R.string.app_name)}: iperf")
   }
 }

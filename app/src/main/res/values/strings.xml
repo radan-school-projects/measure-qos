@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">MQOS</string>
+    <string name="menu_drawer_open">drawer open</string>
+    <string name="menu_drawer_close">drawer close</string>
 </resources>

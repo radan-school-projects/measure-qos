@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_height="160dp"
     android:padding="20dp"
-    android:background="@color/design_default_color_primary_dark"
+    android:background="@color/design_default_color_primary"
     android:layout_width="match_parent">
 
     <TextView
