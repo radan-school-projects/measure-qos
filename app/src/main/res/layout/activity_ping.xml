@@ -6,14 +6,73 @@
     android:layout_height="match_parent"
     tools:context=".PingActivity">
 
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
+    <androidx.gridlayout.widget.GridLayout
+        android:id="@+id/gridLayout"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="This is ping"
-        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteX="1dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp"
+        >
+
+        <Button
+            android:id="@+id/btn_config_ping"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawableStart="@drawable/ic_config_white"
+            android:text="SERVER"
+            app:layout_column="0"
+            app:layout_row="0"
+            android:layout_marginEnd="@dimen/default_gap"
+            />
+
+        <Button
+            android:id="@+id/btn_start_ping"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RUN"
+            app:layout_column="1"
+            app:layout_row="0"
+            android:layout_marginEnd="@dimen/default_gap"
+            />
+
+        <Button
+            android:id="@+id/btn_clear_output"
+            android:textSize="12sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PING"
+            app:layout_column="2"
+            app:layout_row="0"
+            android:layout_marginEnd="@dimen/default_gap"
+            />
+
+    </androidx.gridlayout.widget.GridLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/gridLayout"
+        app:layout_constraintVertical_bias="0.0">
+
+        <TableLayout
+            android:id="@+id/table_output_ping"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="parent"
+            />
+    </ScrollView>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -3,9 +3,12 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/drawable/config_icon.xml" value="0.21510416666666668" />
+        <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/drawable/ic_baseline_settings_24.xml" value="0.21510416666666668" />
+        <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/drawable/ic_launcher_background.xml" value="0.21510416666666668" />
         <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/activity_drawer_base.xml" value="0.1" />
         <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/activity_iperf.xml" value="0.25" />
-        <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/activity_ping.xml" value="0.22" />
+        <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/activity_ping.xml" value="0.25" />
         <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/content_layout.xml" value="0.18" />
         <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/layout/main_drawer_header.xml" value="0.18" />
         <entry key="../../../../../run/media/radan/RADAN/Projects/android-studio/MQOS/app/src/main/res/menu/main_drawer_menu.xml" value="0.1" />
