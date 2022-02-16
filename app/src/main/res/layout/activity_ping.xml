@@ -19,11 +19,11 @@
         >
 
         <Button
-            android:id="@+id/btn_config_ping"
+            android:id="@+id/btn_config"
             android:textSize="12sp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:drawableStart="@drawable/ic_config_white"
+            android:drawableLeft="@drawable/ic_config_white"
             android:text="SERVER"
             app:layout_column="0"
             app:layout_row="0"
@@ -31,7 +31,7 @@
             />
 
         <Button
-            android:id="@+id/btn_start_ping"
+            android:id="@+id/btn_start"
             android:textSize="12sp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -67,7 +67,7 @@
         app:layout_constraintVertical_bias="0.0">
 
         <TableLayout
-            android:id="@+id/table_output_ping"
+            android:id="@+id/table_output"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:layout_constraintTop_toBottomOf="parent"
