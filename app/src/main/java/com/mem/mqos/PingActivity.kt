@@ -4,8 +4,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.view.View
 import android.widget.Toast
 import com.mem.mqos.databinding.ActivityPingBinding
+import com.mem.mqos.databinding.PingSequenceRowBinding
 import com.mem.mqos.databinding.ResultRowGenericBinding
 import java.lang.ref.WeakReference
 import java.util.*
@@ -54,41 +56,34 @@ class PingActivity : DrawerBaseActivity() {
     if (queue.size == 0) return
     //if (specialQueue.size == 0) return
 
-    val str = queue.remove()
-    //Log.i("queue remove", str)
-    //val qElt = specialQueue.remove()
-    //Log.i("rm queue str", qElt.str)
-    //Log.i("rgx", qElt.rgx)
+    val element = queue.remove()
 
-    //var processedStr = ""
-    //val matcher = parsePingString(qElt.str, qElt.rgx)
-    //when (qElt.rgx) {
-    //  regexes[0] -> {
-    //    val rtt = matcher.group(0)
-    //    val seq = matcher.group(3)
-    //    processedStr = "ping n $seq rtt: $rtt ms"
-    //  }
-    //  regexes[1] -> {
-    //    val loss = matcher.group(6)
-    //    processedStr = "taux de perte: $loss%"
-    //  }
-    //  regexes[2] -> {
-    //    val avg = matcher.group(2)
-    //    processedStr = "rtt moyenne: $avg%"
-    //  }
-    //  else -> {} // nothing
-    //}
+    //var view: View
 
-    val resultRowBinding = ResultRowGenericBinding.inflate(layoutInflater)
+    if (element is String) {
+      val resultRowBinding = ResultRowGenericBinding.inflate(layoutInflater)
+      resultRowBinding.tvRandom.text = element
+      val view = resultRowBinding.root
+      activityPingBinding.tableOutput.addView(view)
+    }
+    if (element is PingSequenceRow) {
+      val pingSequenceRowBinding = PingSequenceRowBinding.inflate(layoutInflater)
+      pingSequenceRowBinding.tvSeqN.text = element.seq
+      pingSequenceRowBinding.tvSize.text = element.size
+      pingSequenceRowBinding.tvTtl.text = element.ttl
+      pingSequenceRowBinding.tvRtt.text = element.rtt
+      val view = pingSequenceRowBinding.root
+      activityPingBinding.tableOutput.addView(view)
+    }
 
-    if (str is String) {
-      resultRowBinding.tvRandom.text = str
+    activityPingBinding.scrollView.post {
+      activityPingBinding.scrollView.fullScroll(View.FOCUS_DOWN)
     }
 
     //resultRowBinding.rowText.text = processedStr
 
-    val resultRowView = resultRowBinding.root
-    activityPingBinding.tableOutput.addView(resultRowView)
+    //val resultRowView = resultRowBinding.root
+    //activityPingBinding.tableOutput.addView(view)
   }
 
   private fun togglePing(on: Boolean) {
@@ -143,9 +138,30 @@ class PingActivity : DrawerBaseActivity() {
     return re.matcher(s)
   }
 
+  class PingSequenceRow(var seq: String, var size: String, var ttl: String, var rtt: String)
+  //open class PingSequenceRow(open var seq: String, open var size: String, open var ttl: String, open var rtt: String)
+  //class PingTableHeader(var seq: String = "Seq #", var size: String = "Size", var ttl: String = "TTL", var rtt: String = "RTT"): PingSequenceRow()
+  //class PingTableHeader(override var seq: String = "Seq #", override var size: String = "Size", override var ttl: String = "TTL", override var rtt: String = "RTT"):
+  //  PingSequenceRow(seq, size, ttl, rtt)
+
   internal inner class PingProcess: Runnable {
     override fun run() {
       val cmd = mutableListOf("ping", "-c", "5", "8.8.8.8")
+
+      val cmdStr = "-> ${cmd.joinToString(" ")}"
+
+      // ==
+      //queue.add(cmdStr)
+      //val toAddToQueue = mutableListOf(cmdStr, PingTableHeader())
+      val pingTableHeader = PingSequenceRow("Seq #", "Size", "TTL", "RTT")
+      val toAddToQueue = mutableListOf(cmdStr, pingTableHeader)
+      queue.addAll(toAddToQueue)
+
+      while (queue.size > 0) {
+        val messagePing = Message()
+        messagePing.what = PING
+        myHandler.sendMessage(messagePing)
+      }
 
       val builder = ProcessBuilder()
       builder.command(cmd)
@@ -175,28 +191,36 @@ class PingActivity : DrawerBaseActivity() {
         if (pattern == "") continue
 
         //further processing
-        var processedStr = ""
+        //var processedStr = ""
         val matcher = parsePingString(currentStr, pattern)
         matcher.find()//necessary
+
         when (pattern) {
           regexes[0] -> {
+            //"(?<size>[0-9]+?) bytes from (?<ip>[0-9.]+?): icmp_seq=(?<seq>[0-9]+?) ttl=(?<ttl>[0-9]+) time=(?<rtt>[0-9.]+?) (?<rttmetric>\\w+)",
             val seq = matcher.group(3)
-            val rtt = matcher.group(5)
-            processedStr = "ping n $seq rtt: $rtt ms"
+            val size = matcher.group(1)
+            val ttl = matcher.group(4)
+            val rtt = "${matcher.group(5)}ms"
+            val element = PingSequenceRow(seq, size, ttl, rtt)
+            //processedStr = "ping n $seq rtt: $rtt ms"
+            queue.add(element);
           }
           regexes[1] -> {
             val loss = matcher.group(3)
-            processedStr = "taux de perte: $loss%"
+            val processedStr = "taux de perte: $loss%"
+            queue.add(processedStr)
           }
           regexes[2] -> {
             val avg = matcher.group(2)
-            processedStr = "rtt moyenne: $avg ms"
+            val processedStr = "rtt moyenne: ${avg}ms"
+            queue.add(processedStr)
           }
           else -> {} // nothing
         }
         // === newly added code ===
 
-        queue.add(processedStr)
+        //queue.add(processedStr)
         //queue.add(currentStr)
         //specialQueue.add(IMQElt(currentStr, pattern))
 
@@ -222,6 +246,12 @@ class PingActivity : DrawerBaseActivity() {
       myHandler.sendMessage(messageStop)
 
       process.destroy()
+
+      // ===
+      queue.add("------------------------------")
+      val messagePing = Message()
+      messagePing.what = PING
+      myHandler.sendMessage(messagePing)
     }
   }
 }
