@@ -52,6 +52,12 @@ class PingActivity : DrawerBaseActivity() {
     }
   }
 
+  class PingSequenceRow(var seq: String, var size: String, var ttl: String, var rtt: String)
+  //open class PingSequenceRow(open var seq: String, open var size: String, open var ttl: String, open var rtt: String)
+  //class PingTableHeader(var seq: String = "Seq #", var size: String = "Size", var ttl: String = "TTL", var rtt: String = "RTT"): PingSequenceRow()
+  //class PingTableHeader(override var seq: String = "Seq #", override var size: String = "Size", override var ttl: String = "TTL", override var rtt: String = "RTT"):
+  //  PingSequenceRow(seq, size, ttl, rtt)
+
   private fun updateText() {
     if (queue.size == 0) return
     //if (specialQueue.size == 0) return
@@ -105,44 +111,6 @@ class PingActivity : DrawerBaseActivity() {
     errorMessage = ""
     activityPingBinding.btnStart.isClickable = true
   }
-
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    activityPingBinding = ActivityPingBinding.inflate(layoutInflater)
-    setContentView(activityPingBinding.root)
-    this.allocateActivityTitle("${getString(R.string.app_name)}: ping")
-
-    activityPingBinding.btnStart.setOnClickListener {
-      //Log.i("PING BUTTON", "PING CLICKED!")
-      triggerTogglePing()
-      //testRegex()
-    }
-  }
-
-  private fun triggerTogglePing() {
-    activityPingBinding.btnStart.isClickable = false
-
-    val doEnable = mThread == null
-    isThreadRunning = doEnable
-
-    if (doEnable) {
-      mThread = Thread(PingProcess())
-      mThread?.start()
-    }
-  }
-
-  private fun parsePingString(s: String, rgx: String): Matcher {
-    val re = Pattern.compile(
-      rgx,
-      Pattern.CASE_INSENSITIVE.or(Pattern.DOTALL))
-    return re.matcher(s)
-  }
-
-  class PingSequenceRow(var seq: String, var size: String, var ttl: String, var rtt: String)
-  //open class PingSequenceRow(open var seq: String, open var size: String, open var ttl: String, open var rtt: String)
-  //class PingTableHeader(var seq: String = "Seq #", var size: String = "Size", var ttl: String = "TTL", var rtt: String = "RTT"): PingSequenceRow()
-  //class PingTableHeader(override var seq: String = "Seq #", override var size: String = "Size", override var ttl: String = "TTL", override var rtt: String = "RTT"):
-  //  PingSequenceRow(seq, size, ttl, rtt)
 
   internal inner class PingProcess: Runnable {
     override fun run() {
@@ -253,5 +221,37 @@ class PingActivity : DrawerBaseActivity() {
       messagePing.what = PING
       myHandler.sendMessage(messagePing)
     }
+  }
+
+  private fun triggerTogglePing() {
+    activityPingBinding.btnStart.isClickable = false
+
+    val doEnable = mThread == null
+    isThreadRunning = doEnable
+
+    if (doEnable) {
+      mThread = Thread(PingProcess())
+      mThread?.start()
+    }
+  }
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    activityPingBinding = ActivityPingBinding.inflate(layoutInflater)
+    setContentView(activityPingBinding.root)
+    allocateActivityTitle("${getString(R.string.app_name)}: ping")
+
+    activityPingBinding.btnStart.setOnClickListener {
+      //Log.i("PING BUTTON", "PING CLICKED!")
+      triggerTogglePing()
+      //testRegex()
+    }
+  }
+
+  private fun parsePingString(s: String, rgx: String): Matcher {
+    val re = Pattern.compile(
+      rgx,
+      Pattern.CASE_INSENSITIVE.or(Pattern.DOTALL))
+    return re.matcher(s)
   }
 }
