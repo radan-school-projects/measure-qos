@@ -9,12 +9,24 @@ import android.widget.Toast
 import com.mem.mqos.databinding.ActivityPingBinding
 import com.mem.mqos.databinding.PingSequenceRowBinding
 import com.mem.mqos.databinding.ResultRowGenericBinding
+import com.mem.mqos.db.AppDatabase
+import com.mem.mqos.db.CommandEntity
+import com.mem.mqos.db.PingFinalResultEntity
+import com.mem.mqos.db.PingSequenceResultEntity
 import java.lang.ref.WeakReference
 import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 class PingActivity : DrawerBaseActivity() {
+  //===Database
+  private lateinit var db: AppDatabase //**
+  //val db = Room.databaseBuilder(
+  //  applicationContext,
+  //  AppDatabase::class.java, "todo-list.db"
+  //).build()
+  //===
+
   private lateinit var activityPingBinding: ActivityPingBinding
 
   private val regexes = arrayOf(
@@ -116,13 +128,28 @@ class PingActivity : DrawerBaseActivity() {
     override fun run() {
       val cmd = mutableListOf("ping", "-c", "5", "8.8.8.8")
 
-      val cmdStr = "-> ${cmd.joinToString(" ")}"
+      val cmdStrA = cmd.joinToString(" ")
+      val cmdStrB = "-> $cmdStrA"
+
+      ////var latestCommandRan: CommandEntity? = null
+      //var latestCommandRanEntity = CommandEntity(value = cmdStrA)
+      //Thread {
+      //  //db.commandDao().insertAll(CommandEntity(value = cmdStrA))
+      //  db.commandDao().insertAll(latestCommandRanEntity)
+      //  // ???
+      //  latestCommandRanEntity = db.commandDao().getWithLatestId()[0] // ??
+      //}.start()
+      ////db.commandDao().insertAll(CommandEntity(value = cmdStrA))
+
+      db.commandDao().insertAll(CommandEntity(cmdStrA))
+      val latestCommandRanEntity = db.commandDao().getWithLatestId()[0] // ??
+      db.pingFinalResultDao().insertAll(PingFinalResultEntity(latestCommandRanEntity.id, null, null)) //***
 
       // ==
       //queue.add(cmdStr)
       //val toAddToQueue = mutableListOf(cmdStr, PingTableHeader())
       val pingTableHeader = PingSequenceRow("Seq #", "Size", "TTL", "RTT")
-      val toAddToQueue = mutableListOf(cmdStr, pingTableHeader)
+      val toAddToQueue = mutableListOf(cmdStrB, pingTableHeader)
       queue.addAll(toAddToQueue)
 
       while (queue.size > 0) {
@@ -171,18 +198,31 @@ class PingActivity : DrawerBaseActivity() {
             val ttl = matcher.group(4)
             val rtt = "${matcher.group(5)}ms"
             val element = PingSequenceRow(seq, size, ttl, rtt)
-            //processedStr = "ping n $seq rtt: $rtt ms"
             queue.add(element);
+
+            Thread {
+              db.pingSequenceResultDao().insertAll(PingSequenceResultEntity(seq, size, ttl, rtt, latestCommandRanEntity.id)) //***
+            }.start()
           }
           regexes[1] -> {
             val loss = matcher.group(3)
             val processedStr = "taux de perte: $loss%"
             queue.add(processedStr)
+
+            db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
+            //Thread {
+            //  db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
+            //}.start()
           }
           regexes[2] -> {
             val avg = matcher.group(2)
             val processedStr = "rtt moyenne: ${avg}ms"
             queue.add(processedStr)
+
+            db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
+            //Thread {
+            //  db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
+            //}.start()
           }
           else -> {} // nothing
         }
@@ -237,9 +277,13 @@ class PingActivity : DrawerBaseActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
     activityPingBinding = ActivityPingBinding.inflate(layoutInflater)
     setContentView(activityPingBinding.root)
     allocateActivityTitle("${getString(R.string.app_name)}: ping")
+
+    db = AppDatabase(this)
+    populateTableView()
 
     activityPingBinding.btnStart.setOnClickListener {
       //Log.i("PING BUTTON", "PING CLICKED!")
@@ -253,5 +297,53 @@ class PingActivity : DrawerBaseActivity() {
       rgx,
       Pattern.CASE_INSENSITIVE.or(Pattern.DOTALL))
     return re.matcher(s)
+  }
+
+  private fun populateTableView() {
+    // db read all commands and sor them by ascending order: from the smaller to greatest id
+    Thread {
+      val commandsRan = db.commandDao().getAll()
+      //Log.i("COMMANDS RAN", JS)
+      //if (commandsRan.isEmpty()) return@Thread
+
+      val pingTableHeader = PingSequenceRow("Seq #", "Size", "TTL", "RTT")
+
+      //val messagePing = Message()
+      //messagePing.what = PING
+
+      for (command in commandsRan) {
+        queue.addAll(arrayOf("-> ${command.value}", pingTableHeader))
+
+        val messagePing = Message()
+        messagePing.what = PING
+        myHandler.sendMessage(messagePing)
+
+        val sequenceRows = db.pingSequenceResultDao().getAllWithCommandId(command.id) //***
+
+        //***
+        for (row in sequenceRows) {
+          val rowObj = PingSequenceRow(row.seq, row.size, row.ttl, row.rtt)
+          queue.add(rowObj)
+
+          val messagePing2 = Message()
+          messagePing2.what = PING
+          myHandler.sendMessage(messagePing2)
+        }
+
+        val finalRes = db.pingFinalResultDao().getAllWithCommandId(command.id)
+        val arr = arrayOf(
+          "taux de perte: ${finalRes[0].lossRate}%",
+          "rtt moyenne: ${finalRes[0].averageRtt}ms",
+          "------------------------------"
+        )
+        queue.addAll(arr)
+
+        for (i in 1..4) {
+          val messagePing3 = Message()
+          messagePing3.what = PING
+          myHandler.sendMessage(messagePing3)
+        }
+      }
+    }.start()
   }
 }
