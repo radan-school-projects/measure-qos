@@ -14,6 +14,46 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="@string/label_iperf_mode"
+            android:layout_marginTop="16dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            />
+        <RadioGroup
+            android:id="@+id/iperfModeRadioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            >
+            <RadioButton android:id="@+id/iperfModeClientRadio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/iperf_mode_client"
+                android:layout_marginEnd="16dp"
+                />
+            <RadioButton android:id="@+id/iperfModeServerRadio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/iperf_mode_server"
+                android:layout_marginEnd="16dp"
+                />
+        </RadioGroup>
+
+        <CheckBox
+            android:id="@+id/checkBoxUdp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_iperf_udp"
+            android:layout_marginTop="6dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:hint="@string/label_iperf_cible"
             android:layout_marginTop="16dp"
             android:layout_marginRight="8dp"
@@ -26,16 +66,6 @@
             android:hint="@string/label_iperf_cible"
             android:autofillHints=""
             android:inputType=""
-            android:layout_marginRight="8dp"
-            android:layout_marginLeft="8dp"
-            />
-
-        <CheckBox
-            android:id="@+id/checkBoxUdp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/label_iperf_udp"
-            android:layout_marginTop="16dp"
             android:layout_marginRight="8dp"
             android:layout_marginLeft="8dp"
             />
@@ -54,7 +84,7 @@
             android:layout_height="wrap_content"
             android:hint="@string/label_iperf_interval"
             android:autofillHints=""
-            android:inputType="number"
+            android:inputType="numberDecimal"
             android:layout_marginRight="8dp"
             android:layout_marginLeft="8dp"
             />

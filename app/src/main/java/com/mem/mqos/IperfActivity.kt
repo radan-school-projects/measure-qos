@@ -10,6 +10,7 @@ import androidx.appcompat.app.AlertDialog
 import com.mem.mqos.databinding.ActivityIperfBinding
 import com.mem.mqos.databinding.IperfSettingsDialogBinding
 import com.mem.mqos.databinding.ResultRowGenericBinding
+import com.mem.mqos.utils.Utils
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.ref.WeakReference
@@ -36,9 +37,14 @@ class IperfActivity : DrawerBaseActivity() {
     private const val START = 100
   }
 
+  enum class MODES {
+    CLIENT, SERVER
+  }
+
   object Params {
-    var server = "8.8.8.8"
+    var mode: MODES = MODES.CLIENT
     var isUdp = false
+    var server = "8.8.8.8"
     var interval = 1.0
     var time = 5
   }
@@ -70,11 +76,11 @@ class IperfActivity : DrawerBaseActivity() {
 
     if (on) {
       //activityIperfBinding.btnStart.text = resources.getString(R.string.btn_stop)
-      activityIperfBinding.btnStart.text = "STOP"
+      activityIperfBinding.btnStart.text = getString(R.string.stop_btn_text)
     } else {
       mThread = null
       //activityIperfBinding.btnStart.text = resources.getString(R.string.btn_start)
-      activityIperfBinding.btnStart.text = "START"
+      activityIperfBinding.btnStart.text = getString(R.string.run_btn_text)
     }
 
     errorMessage = ""
@@ -192,11 +198,56 @@ class IperfActivity : DrawerBaseActivity() {
     iperfSettingsDialogBinding.iperfInterval.setText(params.interval.toString())
     iperfSettingsDialogBinding.iperfTime.setText(params.time.toString())
 
+    when (params.mode) {
+      MODES.SERVER -> {
+        iperfSettingsDialogBinding.iperfModeServerRadio.isChecked = true
+        iperfSettingsDialogBinding.checkBoxUdp.isChecked = false
+        iperfSettingsDialogBinding.checkBoxUdp.isEnabled = false
+
+        //params.server = Utils.getIPAddress(true)
+        iperfSettingsDialogBinding.iperfCible.setText(Utils.getIPAddress(true))
+
+        iperfSettingsDialogBinding.iperfCible.isEnabled = false
+      }
+      MODES.CLIENT -> {
+        iperfSettingsDialogBinding.iperfModeClientRadio.isChecked = true
+        iperfSettingsDialogBinding.checkBoxUdp.isEnabled = true
+        iperfSettingsDialogBinding.iperfCible.isEnabled = true
+      }
+    }
+
+    iperfSettingsDialogBinding.iperfModeRadioGroup.setOnCheckedChangeListener {
+      _, checkedId ->
+        when (checkedId) {
+          R.id.iperfModeServerRadio -> {
+            //params.mode = MODES.SERVER
+            iperfSettingsDialogBinding.checkBoxUdp.isChecked = false
+            iperfSettingsDialogBinding.checkBoxUdp.isEnabled = false
+
+            //params.server = Utils.getIPAddress(true)
+            iperfSettingsDialogBinding.iperfCible.setText(Utils.getIPAddress(true))
+
+            iperfSettingsDialogBinding.iperfCible.isEnabled = false
+          }
+          R.id.iperfModeClientRadio -> {
+            //params.mode = MODES.CLIENT
+            iperfSettingsDialogBinding.checkBoxUdp.isEnabled = true
+            //iperfSettingsDialogBinding.iperfCible.setText("8.8.8.8")
+            iperfSettingsDialogBinding.iperfCible.isEnabled = true
+          }
+        }
+    }
+
     builder.setView(dialogView)
     builder.setPositiveButton("OK") {
         _, _ ->
-      params.server = iperfSettingsDialogBinding.iperfCible.text.toString()
+      params.mode = when (iperfSettingsDialogBinding.iperfModeRadioGroup.checkedRadioButtonId) {
+        R.id.iperfModeClientRadio -> MODES.CLIENT
+        R.id.iperfModeServerRadio -> MODES.SERVER
+        else -> MODES.CLIENT
+      }
       params.isUdp = iperfSettingsDialogBinding.checkBoxUdp.isChecked
+      params.server = iperfSettingsDialogBinding.iperfCible.text.toString()
       params.interval = iperfSettingsDialogBinding.iperfInterval.text.toString().toDouble()
       params.time = iperfSettingsDialogBinding.iperfTime.text.toString().toInt()
       syncServerText()
