@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        tools:layout_editor_absoluteX="1dp"
+        tools:layout_editor_absoluteY="1dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/label_iperf_cible"
+            android:layout_marginTop="16dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            />
+        <EditText
+            android:id="@+id/iperfCible"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/label_iperf_cible"
+            android:autofillHints=""
+            android:inputType=""
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            />
+
+        <CheckBox
+            android:id="@+id/checkBoxUdp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/label_iperf_udp"
+            android:layout_marginTop="16dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/label_iperf_interval"
+            android:layout_marginTop="16dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            />
+        <EditText
+            android:id="@+id/iperfInterval"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/label_iperf_interval"
+            android:autofillHints=""
+            android:inputType="number"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/label_iperf_time"
+            android:layout_marginTop="16dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            />
+        <EditText
+            android:id="@+id/iperfTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/label_iperf_time"
+            android:autofillHints=""
+            android:inputType="number"
+            android:layout_marginRight="8dp"
+            android:layout_marginLeft="8dp"
+            />
+
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

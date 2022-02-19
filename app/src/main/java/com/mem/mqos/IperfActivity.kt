@@ -6,7 +6,9 @@ import android.os.Looper
 import android.os.Message
 import android.util.Log
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import com.mem.mqos.databinding.ActivityIperfBinding
+import com.mem.mqos.databinding.IperfSettingsDialogBinding
 import com.mem.mqos.databinding.ResultRowGenericBinding
 import java.io.File
 import java.io.FileOutputStream
@@ -15,6 +17,7 @@ import java.util.*
 
 class IperfActivity : DrawerBaseActivity() {
   private lateinit var activityIperfBinding: ActivityIperfBinding
+  private lateinit var iperfSettingsDialogBinding: IperfSettingsDialogBinding
 
   private val iperfName = "iperf39"
   private var iperfPath: String = ""
@@ -31,6 +34,19 @@ class IperfActivity : DrawerBaseActivity() {
     private const val IPERF = 102
     private const val STOP = 101
     private const val START = 100
+  }
+
+  object Params {
+    var server = "8.8.8.8"
+    var isUdp = false
+    var interval = 1.0
+    var time = 5
+  }
+
+  private var params = Params
+
+  private fun syncServerText() {
+    activityIperfBinding.btnConfig.text = params.server
   }
 
   private fun updateText() {
@@ -88,29 +104,17 @@ class IperfActivity : DrawerBaseActivity() {
       val builder = ProcessBuilder()
       builder.command(cmd)
 
-      //var process: Proces
-      //Thread({
-      //  val process = builder.start()
-      //})
       val process = builder.start()
-      Log.i("STATUS", "process started!!!")
 
       val stdInput = process.inputStream.bufferedReader()
-      //val stdInput = BufferedReader(InputStreamReader(process.inputStream))
 
       val messageStart = Message()
       messageStart.what = START
       myHandler.sendMessage(messageStart)
-      //Log.i("STATUS", "START MESSAGE SENT")
-      //Log.i("isThreadRunning", "$isThreadRunning")
 
       while (isThreadRunning) {
-        Log.i("Loop", "one iteration")
-        //val stdInput = process.inputStream.bufferedReader()
         val currentStr = stdInput.readLine() ?: break //break // wrap into try catch block later
 
-        //queue.add(currentStr)
-        //Log.i("currentStr", currentStr)
         queue.add(currentStr)
 
         val messageIperf = Message()
@@ -160,15 +164,44 @@ class IperfActivity : DrawerBaseActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
     activityIperfBinding = ActivityIperfBinding.inflate(layoutInflater)
     setContentView(activityIperfBinding.root)
     allocateActivityTitle("${getString(R.string.app_name)}: iperf")
 
+    syncServerText()
     setupIperf()
 
     activityIperfBinding.btnStart.setOnClickListener {
       triggerToggleIperf()
-      //execCommand()
     }
+
+    activityIperfBinding.btnConfig.setOnClickListener {
+      showSettingsPopup()
+    }
+  }
+
+  private fun showSettingsPopup() {
+    val builder = AlertDialog.Builder(this)
+
+    iperfSettingsDialogBinding = IperfSettingsDialogBinding.inflate(layoutInflater)
+    val dialogView = iperfSettingsDialogBinding.root
+
+    iperfSettingsDialogBinding.iperfCible.setText(params.server)
+    iperfSettingsDialogBinding.checkBoxUdp.isChecked = params.isUdp
+    iperfSettingsDialogBinding.iperfInterval.setText(params.interval.toString())
+    iperfSettingsDialogBinding.iperfTime.setText(params.time.toString())
+
+    builder.setView(dialogView)
+    builder.setPositiveButton("OK") {
+        _, _ ->
+      params.server = iperfSettingsDialogBinding.iperfCible.text.toString()
+      params.isUdp = iperfSettingsDialogBinding.checkBoxUdp.isChecked
+      params.interval = iperfSettingsDialogBinding.iperfInterval.text.toString().toDouble()
+      params.time = iperfSettingsDialogBinding.iperfTime.text.toString().toInt()
+      syncServerText()
+    }
+
+    builder.show()
   }
 }

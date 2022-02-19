@@ -278,17 +278,13 @@ class PingActivity : DrawerBaseActivity() {
     allocateActivityTitle("${getString(R.string.app_name)}: ping")
 
     db = AppDatabase(this)
-    //populateTableView()
     populateTableView2()
 
     activityPingBinding.btnStart.setOnClickListener {
-      //Log.i("PING BUTTON", "PING CLICKED!")
       triggerTogglePing()
-      //testRegex()
     }
 
     activityPingBinding.btnClearOutput.setOnClickListener {
-      //clearTableView()
       Thread {
         db.pingCommandDao().deleteAll()
         db.pingSequenceResultDao().deleteAll()
