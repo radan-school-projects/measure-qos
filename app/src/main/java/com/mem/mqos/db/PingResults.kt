@@ -29,8 +29,8 @@ interface PingSequenceResultDao {
   @Insert
   fun insertAll(vararg command: PingSequenceResultEntity)
 
-  //@Query("DELETE FROM ping_sequence_results")
-  //fun deleteAll(command: CommandEntity)
+  @Query("DELETE FROM ping_sequence_results")
+  fun deleteAll()
 }
 
 @Entity(tableName = "ping_final_results")
@@ -64,6 +64,6 @@ interface PingFinalResultDao {
   @Query("UPDATE ping_final_results SET average_rtt = :averageRtt WHERE commandId = :commandId")
   fun updateAverageRttWhereCommandId(commandId: Int, averageRtt: String?): Int
 
-  //@Query("DELETE FROM ping_final_results")
-  //fun deleteAll(command: CommandEntity)
+  @Query("DELETE FROM ping_final_results")
+  fun deleteAll()
 }

@@ -14,6 +14,7 @@ import com.google.android.material.navigation.NavigationView
 
 open class DrawerBaseActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
   private lateinit var drawerLayout: DrawerLayout
+  //public lateinit var currentActivity: String
 
   override fun setContentView(view: View?) {
     @SuppressLint("InflateParams")
@@ -38,11 +39,17 @@ open class DrawerBaseActivity : AppCompatActivity(), NavigationView.OnNavigation
     drawerLayout.closeDrawer(GravityCompat.START)
     when (item.itemId) {
       R.id.iperf_menu_link -> {
-        startActivity(Intent(this, IperfActivity::class.java))
+        val intent = Intent(this, IperfActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        startActivity(intent)
+        //startActivity(Intent(this, IperfActivity::class.java))
         overridePendingTransition(0, 0)
       }
       R.id.ping_menu_link -> {
-        startActivity(Intent(this, PingActivity::class.java))
+        val intent = Intent(this, PingActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        startActivity(intent)
+        //startActivity(Intent(this, PingActivity::class.java))
         overridePendingTransition(0, 0)
       }
     }

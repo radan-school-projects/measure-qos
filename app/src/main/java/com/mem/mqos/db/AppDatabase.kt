@@ -12,9 +12,10 @@ import androidx.room.*
   version = 1
 )
 abstract class AppDatabase: RoomDatabase() {
-  abstract fun commandDao(): CommandDao
+  abstract fun pingCommandDao(): PingCommandDao
   abstract fun pingSequenceResultDao(): PingSequenceResultDao
   abstract fun pingFinalResultDao(): PingFinalResultDao
+  abstract fun pingJoinDao(): PingJoinDao
 
   companion object {
     @Volatile private var instance: AppDatabase? = null
@@ -25,7 +26,7 @@ abstract class AppDatabase: RoomDatabase() {
     }
 
     private fun buildDatabase(context: Context) = Room.databaseBuilder(context,
-      AppDatabase::class.java, "todo-list.db")
+      AppDatabase::class.java, "measure-qos.db")
       .build()
   }
 }

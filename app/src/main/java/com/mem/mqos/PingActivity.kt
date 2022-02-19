@@ -9,10 +9,7 @@ import android.widget.Toast
 import com.mem.mqos.databinding.ActivityPingBinding
 import com.mem.mqos.databinding.PingSequenceRowBinding
 import com.mem.mqos.databinding.ResultRowGenericBinding
-import com.mem.mqos.db.AppDatabase
-import com.mem.mqos.db.CommandEntity
-import com.mem.mqos.db.PingFinalResultEntity
-import com.mem.mqos.db.PingSequenceResultEntity
+import com.mem.mqos.db.*
 import java.lang.ref.WeakReference
 import java.util.*
 import java.util.regex.Matcher
@@ -65,10 +62,7 @@ class PingActivity : DrawerBaseActivity() {
   }
 
   class PingSequenceRow(var seq: String, var size: String, var ttl: String, var rtt: String)
-  //open class PingSequenceRow(open var seq: String, open var size: String, open var ttl: String, open var rtt: String)
-  //class PingTableHeader(var seq: String = "Seq #", var size: String = "Size", var ttl: String = "TTL", var rtt: String = "RTT"): PingSequenceRow()
-  //class PingTableHeader(override var seq: String = "Seq #", override var size: String = "Size", override var ttl: String = "TTL", override var rtt: String = "RTT"):
-  //  PingSequenceRow(seq, size, ttl, rtt)
+  private val pingTableHeader = PingSequenceRow("Seq #", "Size", "TTL", "RTT")
 
   private fun updateText() {
     if (queue.size == 0) return
@@ -134,21 +128,21 @@ class PingActivity : DrawerBaseActivity() {
       ////var latestCommandRan: CommandEntity? = null
       //var latestCommandRanEntity = CommandEntity(value = cmdStrA)
       //Thread {
-      //  //db.commandDao().insertAll(CommandEntity(value = cmdStrA))
-      //  db.commandDao().insertAll(latestCommandRanEntity)
+      //  //db.pingCommandDao().insertAll(CommandEntity(value = cmdStrA))
+      //  db.pingCommandDao().insertAll(latestCommandRanEntity)
       //  // ???
-      //  latestCommandRanEntity = db.commandDao().getWithLatestId()[0] // ??
+      //  latestCommandRanEntity = db.pingCommandDao().getWithLatestId()[0] // ??
       //}.start()
-      ////db.commandDao().insertAll(CommandEntity(value = cmdStrA))
+      ////db.pingCommandDao().insertAll(CommandEntity(value = cmdStrA))
 
-      db.commandDao().insertAll(CommandEntity(cmdStrA))
-      val latestCommandRanEntity = db.commandDao().getWithLatestId()[0] // ??
+      db.pingCommandDao().insertAll(CommandEntity(cmdStrA))
+      val latestCommandRanEntity = db.pingCommandDao().getWithLatestId()[0] // ??
       db.pingFinalResultDao().insertAll(PingFinalResultEntity(latestCommandRanEntity.id, null, null)) //***
 
       // ==
       //queue.add(cmdStr)
       //val toAddToQueue = mutableListOf(cmdStr, PingTableHeader())
-      val pingTableHeader = PingSequenceRow("Seq #", "Size", "TTL", "RTT")
+      //val pingTableHeader = PingSequenceRow("Seq #", "Size", "TTL", "RTT")
       val toAddToQueue = mutableListOf(cmdStrB, pingTableHeader)
       queue.addAll(toAddToQueue)
 
@@ -193,13 +187,14 @@ class PingActivity : DrawerBaseActivity() {
         when (pattern) {
           regexes[0] -> {
             //"(?<size>[0-9]+?) bytes from (?<ip>[0-9.]+?): icmp_seq=(?<seq>[0-9]+?) ttl=(?<ttl>[0-9]+) time=(?<rtt>[0-9.]+?) (?<rttmetric>\\w+)",
-            val seq = matcher.group(3)
-            val size = matcher.group(1)
-            val ttl = matcher.group(4)
+            val seq = "" + matcher.group(3)
+            val size = "" + matcher.group(1)
+            val ttl = "" + matcher.group(4)
             val rtt = "${matcher.group(5)}ms"
             val element = PingSequenceRow(seq, size, ttl, rtt)
-            queue.add(element);
+            queue.add(element)
 
+            //db.pingSequenceResultDao().insertAll(PingSequenceResultEntity(seq, size, ttl, rtt, latestCommandRanEntity.id)) //***
             Thread {
               db.pingSequenceResultDao().insertAll(PingSequenceResultEntity(seq, size, ttl, rtt, latestCommandRanEntity.id)) //***
             }.start()
@@ -209,20 +204,20 @@ class PingActivity : DrawerBaseActivity() {
             val processedStr = "taux de perte: $loss%"
             queue.add(processedStr)
 
-            db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
-            //Thread {
-            //  db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
-            //}.start()
+            //db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
+            Thread {
+              db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
+            }.start()
           }
           regexes[2] -> {
             val avg = matcher.group(2)
             val processedStr = "rtt moyenne: ${avg}ms"
             queue.add(processedStr)
 
-            db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
-            //Thread {
-            //  db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
-            //}.start()
+            //db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
+            Thread {
+              db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
+            }.start()
           }
           else -> {} // nothing
         }
@@ -283,12 +278,23 @@ class PingActivity : DrawerBaseActivity() {
     allocateActivityTitle("${getString(R.string.app_name)}: ping")
 
     db = AppDatabase(this)
-    populateTableView()
+    //populateTableView()
+    populateTableView2()
 
     activityPingBinding.btnStart.setOnClickListener {
       //Log.i("PING BUTTON", "PING CLICKED!")
       triggerTogglePing()
       //testRegex()
+    }
+
+    activityPingBinding.btnClearOutput.setOnClickListener {
+      //clearTableView()
+      Thread {
+        db.pingCommandDao().deleteAll()
+        db.pingSequenceResultDao().deleteAll()
+        db.pingFinalResultDao().deleteAll()
+      }.start()
+      activityPingBinding.tableOutput.removeAllViews()
     }
   }
 
@@ -299,24 +305,83 @@ class PingActivity : DrawerBaseActivity() {
     return re.matcher(s)
   }
 
+  //private fun clearTableView() {
+  //  activityPingBinding.tableOutput.removeAllViews()
+  //}
+
+  private fun populateTableView2() {
+    Thread {
+      val allJoins = db.pingJoinDao().joinAllPing()
+
+      //val pingTableHeader = PingSequenceRow("Seq #", "Size", "TTL", "RTT")
+
+      var lastCmdId = 0
+
+      for (index in allJoins.indices) {
+        val element = allJoins[index]
+
+        if (element.id != lastCmdId) {
+          lastCmdId = element.id
+
+          val arr0 = mutableListOf("-> ${element.value}", pingTableHeader)
+          queue.addAll(arr0)
+
+          for (i in arr0) {
+            val messagePing0 = Message()
+            messagePing0.what = PING
+            myHandler.sendMessage(messagePing0)
+          }
+        }
+
+        queue.add(PingSequenceRow(element.seq, element.size, element.ttl, element.rtt))
+        val messagePing1 = Message()
+        messagePing1.what = PING
+        myHandler.sendMessage(messagePing1)
+
+        if ((index >= (allJoins.size - 1)) || (allJoins[index + 1].id != element.id)) {
+          val arr = arrayOf(
+            "taux de perte: ${element.loss_rate}%",
+            "rtt moyenne: ${element.average_rtt}ms",
+            "------------------------------"
+          )
+          queue.addAll(arr)
+          for (i in arr) {
+            val messagePing2 = Message()
+            messagePing2.what = PING
+            myHandler.sendMessage(messagePing2)
+          }
+        }
+      }
+
+      //while (queue.size > 0) {
+      //  val messagePing2 = Message()
+      //  messagePing2.what = PING
+      //  myHandler.sendMessage(messagePing2)
+      //}
+    }.start()
+  }
+
   private fun populateTableView() {
     // db read all commands and sor them by ascending order: from the smaller to greatest id
     Thread {
-      val commandsRan = db.commandDao().getAll()
+      val commandsRan = db.pingCommandDao().getAll()
       //Log.i("COMMANDS RAN", JS)
       //if (commandsRan.isEmpty()) return@Thread
 
-      val pingTableHeader = PingSequenceRow("Seq #", "Size", "TTL", "RTT")
+      //val pingTableHeader = PingSequenceRow("Seq #", "Size", "TTL", "RTT")
 
       //val messagePing = Message()
       //messagePing.what = PING
 
       for (command in commandsRan) {
-        queue.addAll(arrayOf("-> ${command.value}", pingTableHeader))
+        val arr0 = arrayOf("-> ${command.value}", pingTableHeader)
+        queue.addAll(arr0)
 
-        val messagePing = Message()
-        messagePing.what = PING
-        myHandler.sendMessage(messagePing)
+        for (i in arr0) {
+          val messagePing = Message()
+          messagePing.what = PING
+          myHandler.sendMessage(messagePing)
+        }
 
         val sequenceRows = db.pingSequenceResultDao().getAllWithCommandId(command.id) //***
 
@@ -338,7 +403,7 @@ class PingActivity : DrawerBaseActivity() {
         )
         queue.addAll(arr)
 
-        for (i in 1..4) {
+        for (i in arr) {
           val messagePing3 = Message()
           messagePing3.what = PING
           myHandler.sendMessage(messagePing3)
