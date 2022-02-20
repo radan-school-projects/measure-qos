@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.mem.mqos.databinding.ActivityIperfBinding
@@ -30,6 +31,7 @@ class IperfActivity : DrawerBaseActivity() {
   private var errorMessage = ""
 
   private val queue: Queue<String> = ArrayDeque()
+  //private val queue = ArrayDeque<Any>()
 
   companion object {
     private const val IPERF = 102
@@ -44,7 +46,7 @@ class IperfActivity : DrawerBaseActivity() {
   object Params {
     var mode: MODES = MODES.CLIENT
     var isUdp = false
-    var server = "8.8.8.8"
+    var server = "192.168.43.231"
     var interval = 1.0
     var time = 5
   }
@@ -66,6 +68,10 @@ class IperfActivity : DrawerBaseActivity() {
 
     val resultRowView = resultRowBinding.root
     activityIperfBinding.tableOutput.addView(resultRowView)
+
+    activityIperfBinding.scrollView.post {
+      activityIperfBinding.scrollView.fullScroll(View.FOCUS_DOWN)
+    }
   }
 
   private fun toggleIperf(on: Boolean) {
@@ -101,9 +107,28 @@ class IperfActivity : DrawerBaseActivity() {
 
   internal inner class IperfProcess: Runnable {
     override fun run() {
-      val cmd = mutableListOf(iperfPath, "-c", "192.168.43.231", "-t", "4")
+      val cmd = mutableListOf(iperfPath)
+      //val cmd = mutableListOf(iperfPath, "-c", "192.168.43.231", "-t", "4")
       //val cmd = mutableListOf(iperfPath, "-s")
-      //val cmd = mutableListOf("ping", "-c", "5", "192.168.43.231")
+
+      when (params.mode) {
+        MODES.CLIENT -> {
+          val udpOption = if (params.isUdp) "-u" else ""
+          cmd.addAll(arrayOf(
+            "-c", params.server, udpOption,
+            "-t", params.time.toString(),
+            "-i", params.interval.toString()
+          ))
+        }
+        MODES.SERVER -> cmd.addAll(arrayOf("-s", "-1"))
+      }
+
+      val cmd1 = cmd.toMutableList()
+      cmd1[0] = "iperf3"
+      queue.add(cmd1.joinToString(" "))
+      val myMessage = Message()
+      myMessage.what = IPERF
+      myHandler.sendMessage(myMessage)
 
       cmd.add("--forceflush")
 
@@ -185,6 +210,10 @@ class IperfActivity : DrawerBaseActivity() {
     activityIperfBinding.btnConfig.setOnClickListener {
       showSettingsPopup()
     }
+
+    activityIperfBinding.btnClearOutput.setOnClickListener {
+      activityIperfBinding.tableOutput.removeAllViews()
+    }
   }
 
   private fun showSettingsPopup() {
@@ -203,6 +232,8 @@ class IperfActivity : DrawerBaseActivity() {
         iperfSettingsDialogBinding.iperfModeServerRadio.isChecked = true
         iperfSettingsDialogBinding.checkBoxUdp.isChecked = false
         iperfSettingsDialogBinding.checkBoxUdp.isEnabled = false
+        iperfSettingsDialogBinding.iperfTime.isEnabled = false
+        iperfSettingsDialogBinding.iperfInterval.isEnabled = false
 
         //params.server = Utils.getIPAddress(true)
         iperfSettingsDialogBinding.iperfCible.setText(Utils.getIPAddress(true))
@@ -223,6 +254,8 @@ class IperfActivity : DrawerBaseActivity() {
             //params.mode = MODES.SERVER
             iperfSettingsDialogBinding.checkBoxUdp.isChecked = false
             iperfSettingsDialogBinding.checkBoxUdp.isEnabled = false
+            iperfSettingsDialogBinding.iperfTime.isEnabled = false
+            iperfSettingsDialogBinding.iperfInterval.isEnabled = false
 
             //params.server = Utils.getIPAddress(true)
             iperfSettingsDialogBinding.iperfCible.setText(Utils.getIPAddress(true))
@@ -234,6 +267,8 @@ class IperfActivity : DrawerBaseActivity() {
             iperfSettingsDialogBinding.checkBoxUdp.isEnabled = true
             //iperfSettingsDialogBinding.iperfCible.setText("8.8.8.8")
             iperfSettingsDialogBinding.iperfCible.isEnabled = true
+            iperfSettingsDialogBinding.iperfInterval.isEnabled = true
+            iperfSettingsDialogBinding.iperfTime.isEnabled = true
           }
         }
     }
