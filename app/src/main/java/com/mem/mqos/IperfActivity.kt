@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -20,6 +19,8 @@ import java.util.*
 class IperfActivity : DrawerBaseActivity() {
   private lateinit var activityIperfBinding: ActivityIperfBinding
   private lateinit var iperfSettingsDialogBinding: IperfSettingsDialogBinding
+
+  var iperfProcess: Process? = null
 
   private val iperfName = "iperf39"
   private var iperfPath: String = ""
@@ -77,13 +78,15 @@ class IperfActivity : DrawerBaseActivity() {
   private fun toggleIperf(on: Boolean) {
     if (errorMessage != "") {
       Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
-      Log.i("errorMessage", errorMessage)
+      //Log.i("errorMessage", errorMessage)
     }
 
     if (on) {
       //activityIperfBinding.btnStart.text = resources.getString(R.string.btn_stop)
       activityIperfBinding.btnStart.text = getString(R.string.stop_btn_text)
     } else {
+      //Runtime.getRuntime().exec("kill -9 \$(pidof /data/user/0/com.mem.mqos/files/iperf39)")
+      //mThread?.interrupt()
       mThread = null
       //activityIperfBinding.btnStart.text = resources.getString(R.string.btn_start)
       activityIperfBinding.btnStart.text = getString(R.string.run_btn_text)
@@ -120,7 +123,7 @@ class IperfActivity : DrawerBaseActivity() {
             "-i", params.interval.toString()
           ))
         }
-        MODES.SERVER -> cmd.addAll(arrayOf("-s", "-1"))
+        MODES.SERVER -> cmd.addAll(arrayOf("-s"))
       }
 
       val cmd1 = cmd.toMutableList()
@@ -136,6 +139,7 @@ class IperfActivity : DrawerBaseActivity() {
       builder.command(cmd)
 
       val process = builder.start()
+      iperfProcess = process
 
       val stdInput = process.inputStream.bufferedReader()
 
@@ -144,7 +148,12 @@ class IperfActivity : DrawerBaseActivity() {
       myHandler.sendMessage(messageStart)
 
       while (isThreadRunning) {
-        val currentStr = stdInput.readLine() ?: break //break // wrap into try catch block later
+        //val currentStr = stdInput.readLine() ?: break // wrap into try catch block later
+        val currentStr = try {
+          stdInput.readLine()
+        } catch (e: Throwable) {
+          break
+        } ?: break
 
         queue.add(currentStr)
 
@@ -173,7 +182,18 @@ class IperfActivity : DrawerBaseActivity() {
     if (doEnable) {
       mThread = Thread(IperfProcess())
       mThread?.start()
+    } else {
+      //Runtime.getRuntime().exec("kill -9 \$(pidof /data/user/0/com.mem.mqos/files/iperf39)")
+
+      //toggleIperf(false)
+      //iperfProcess?.destroy()
+
+      mThread = null
+      activityIperfBinding.btnStart.text = getString(R.string.run_btn_text)
+      activityIperfBinding.btnStart.isClickable = true
+      iperfProcess?.destroy()
     }
+    //***
   }
 
   private fun setupIperf() {

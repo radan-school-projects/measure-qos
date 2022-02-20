@@ -194,30 +194,30 @@ class PingActivity : DrawerBaseActivity() {
             val element = PingSequenceRow(seq, size, ttl, rtt)
             queue.add(element)
 
-            //db.pingSequenceResultDao().insertAll(PingSequenceResultEntity(seq, size, ttl, rtt, latestCommandRanEntity.id)) //***
-            Thread {
-              db.pingSequenceResultDao().insertAll(PingSequenceResultEntity(seq, size, ttl, rtt, latestCommandRanEntity.id)) //***
-            }.start()
+            db.pingSequenceResultDao().insertAll(PingSequenceResultEntity(seq, size, ttl, rtt, latestCommandRanEntity.id)) //***
+            //Thread {
+            //  db.pingSequenceResultDao().insertAll(PingSequenceResultEntity(seq, size, ttl, rtt, latestCommandRanEntity.id)) //***
+            //}.start()
           }
           regexes[1] -> {
             val loss = matcher.group(3)
             val processedStr = "taux de perte: $loss%"
             queue.add(processedStr)
 
-            //db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
-            Thread {
-              db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
-            }.start()
+            db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
+            //Thread {
+            //  db.pingFinalResultDao().updateLossRateWhereCommandId(latestCommandRanEntity.id, loss) //***
+            //}.start()
           }
           regexes[2] -> {
             val avg = matcher.group(2)
             val processedStr = "rtt moyenne: ${avg}ms"
             queue.add(processedStr)
 
-            //db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
-            Thread {
-              db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
-            }.start()
+            db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
+            //Thread {
+            //  db.pingFinalResultDao().updateAverageRttWhereCommandId(latestCommandRanEntity.id, avg) //***
+            //}.start()
           }
           else -> {} // nothing
         }
@@ -329,17 +329,30 @@ class PingActivity : DrawerBaseActivity() {
           }
         }
 
-        queue.add(PingSequenceRow(element.seq, element.size, element.ttl, element.rtt))
-        val messagePing1 = Message()
-        messagePing1.what = PING
-        myHandler.sendMessage(messagePing1)
+        //val (seq, size, ttl, rtt) = element
+        val seq = element.seq
+        val size = element.size
+        val ttl = element.ttl
+        val rtt = element.rtt
+
+        if (seq != null && size != null && ttl != null && rtt != null) {
+          queue.add(PingSequenceRow(seq.toString(), size, ttl, rtt))
+          val messagePing1 = Message()
+          messagePing1.what = PING
+          myHandler.sendMessage(messagePing1)
+        }
 
         if ((index >= (allJoins.size - 1)) || (allJoins[index + 1].id != element.id)) {
-          val arr = arrayOf(
-            "taux de perte: ${element.loss_rate}%",
-            "rtt moyenne: ${element.average_rtt}ms",
-            "------------------------------"
-          )
+          val arr = if (element.loss_rate != null && element.average_rtt != null) {
+            mutableListOf(
+              "taux de perte: ${element.loss_rate}%",
+              "rtt moyenne: ${element.average_rtt}ms",
+            )
+          } else {
+            mutableListOf()
+          }
+          arr.add("------------------------------")
+
           queue.addAll(arr)
           for (i in arr) {
             val messagePing2 = Message()

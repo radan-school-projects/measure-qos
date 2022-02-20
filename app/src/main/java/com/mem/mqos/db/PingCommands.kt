@@ -30,12 +30,12 @@ interface PingCommandDao {
 data class JoinElement(
   var id: Int,
   var value: String,
-  var loss_rate: String,
-  var average_rtt: String,
-  var seq: String,
-  var size: String,
-  var ttl: String,
-  val rtt: String
+  var loss_rate: String?,
+  var average_rtt: String?,
+  var seq: String?,
+  var size: String?,
+  var ttl: String?,
+  val rtt: String?
 )
 
 @Dao
