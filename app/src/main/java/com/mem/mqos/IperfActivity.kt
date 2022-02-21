@@ -4,19 +4,25 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.mem.mqos.databinding.ActivityIperfBinding
 import com.mem.mqos.databinding.IperfSettingsDialogBinding
 import com.mem.mqos.databinding.ResultRowGenericBinding
+import com.mem.mqos.db.AppDatabase
+import com.mem.mqos.db.IperfCommandEntity
 import com.mem.mqos.utils.Utils
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.ref.WeakReference
 import java.util.*
+import java.util.regex.Pattern
 
 class IperfActivity : DrawerBaseActivity() {
+  private lateinit var db: AppDatabase
+
   private lateinit var activityIperfBinding: ActivityIperfBinding
   private lateinit var iperfSettingsDialogBinding: IperfSettingsDialogBinding
 
@@ -108,6 +114,23 @@ class IperfActivity : DrawerBaseActivity() {
     }
   }
 
+  private val regexesClientTcp =  arrayOf(
+    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec  (?<d>[0-9.]+) MBytes  (?<e>[0-9.]+) Mbits/sec    (?<f>[0-9]+)    (?<g>[0-9]+) KBytes",
+    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec  (?<d>[0-9.]+) MBytes  (?<e>[0-9.]+) Mbits/sec    (?<f>[0-9]+)             sender"
+  )
+  private val regexesServerTcp = arrayOf(
+    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec  (?<d>[0-9.]+) MBytes  (?<e>[0-9.]+) Mbits/sec",
+    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec  (?<d>[0-9.]+) MBytes  (?<e>[0-9.]+) Mbits/sec                  receiver"
+  )
+  private val regexesClientUdp =  arrayOf(
+    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec   (?<d>[0-9]+) KBytes  (?<e>[0-9.]+) Mbits/sec  (?<f>[0-9]+)",
+    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec   (?<d>[0-9]+) KBytes  (?<e>[0-9.]+) Mbits/sec  (?<f>[0-9.]+) ms  (?<g>[0-9]+)/(?<h>[0-9]+) \\((?<i>[0-9]+)%\\)  sender"
+  )
+  private val regexesServerUdp =  arrayOf(
+    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec   (?<d>[0-9]+) KBytes  (?<e>[0-9.]+) Mbits/sec  (?<f>[0-9.]+) ms  (?<g>[0-9]+)/(?<h>[0-9]+) \\((?<i>[0-9]+)%\\)",
+    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec   (?<d>[0-9]+) KBytes  (?<e>[0-9.]+) Mbits/sec  (?<f>[0-9.]+) ms  (?<g>[0-9]+)/(?<h>[0-9]+) \\((?<i>[0-9]+)%\\)  receiver"
+  )
+
   internal inner class IperfProcess: Runnable {
     override fun run() {
       val cmd = mutableListOf(iperfPath)
@@ -128,10 +151,15 @@ class IperfActivity : DrawerBaseActivity() {
 
       val cmd1 = cmd.toMutableList()
       cmd1[0] = "iperf3"
-      queue.add(cmd1.joinToString(" "))
+      val cmdStr = cmd1.joinToString(" ")
+
+      queue.add("-> $cmdStr")
       val myMessage = Message()
       myMessage.what = IPERF
       myHandler.sendMessage(myMessage)
+
+      // put in a thread ?
+      db.iperfCommandDao().insertAll(IperfCommandEntity(cmdStr))
 
       cmd.add("--forceflush")
 
@@ -220,11 +248,15 @@ class IperfActivity : DrawerBaseActivity() {
     setContentView(activityIperfBinding.root)
     allocateActivityTitle("${getString(R.string.app_name)}: iperf")
 
-    syncServerText()
     setupIperf()
+    syncServerText()
+
+    db = AppDatabase(this)
+    //populateTableView()
 
     activityIperfBinding.btnStart.setOnClickListener {
       triggerToggleIperf()
+      //testIperfRegex()
     }
 
     activityIperfBinding.btnConfig.setOnClickListener {
@@ -309,5 +341,26 @@ class IperfActivity : DrawerBaseActivity() {
     }
 
     builder.show()
+  }
+
+  private fun testIperfRegex() {
+    //val currentStr = "[  5]   2.00-3.00   sec  6.52 MBytes  54.7 Mbits/sec    0    359 KBytes"
+    //val strRegex = "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec  (?<d>[0-9.]+) MBytes  (?<e>[0-9.]+) Mbits/sec    (?<f>[0-9]+)    (?<g>[0-9]+) KBytes"
+    //val currentStr = "[  5]   0.00-3.00   sec  20.1 MBytes  56.3 Mbits/sec    0             sender"
+    //val strRegex = "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec  (?<d>[0-9.]+) MBytes  (?<e>[0-9.]+) Mbits/sec    (?<f>[0-9]+)             sender"
+
+    val currentStr = "[  5]   0.00-3.00   sec   385 KBytes  1.05 Mbits/sec  0.000 ms  0/272 (0%)  sender"
+    val strRegex = "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec   (?<d>[0-9]+) KBytes  (?<e>[0-9.]+) Mbits/sec  (?<f>[0-9.]+) ms  (?<g>[0-9]+)/(?<h>[0-9]+) \\((?<i>[0-9]+)%\\)  sender"
+
+
+    val resFind = strRegex.toRegex().find(currentStr)?.value
+    Log.i("the", resFind ?: "null")
+
+    val re = Pattern.compile(
+      strRegex,
+      Pattern.CASE_INSENSITIVE.or(Pattern.DOTALL))
+    val resMatch = re.matcher(currentStr)
+    val a = resMatch.find()
+    Log.i("What", a.toString())
   }
 }

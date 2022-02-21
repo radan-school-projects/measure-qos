@@ -5,9 +5,11 @@ import androidx.room.*
 
 @Database(
   entities = [
-    CommandEntity::class,
+    PingCommandEntity::class,
     PingSequenceResultEntity::class,
-    PingFinalResultEntity::class
+    PingFinalResultEntity::class,
+    //===
+    IperfCommandEntity::class
   ],
   version = 1
 )
@@ -16,6 +18,8 @@ abstract class AppDatabase: RoomDatabase() {
   abstract fun pingSequenceResultDao(): PingSequenceResultDao
   abstract fun pingFinalResultDao(): PingFinalResultDao
   abstract fun pingJoinDao(): PingJoinDao
+  //===
+  abstract fun iperfCommandDao(): IperfCommandDao
 
   companion object {
     @Volatile private var instance: AppDatabase? = null

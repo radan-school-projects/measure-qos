@@ -3,7 +3,7 @@ package com.mem.mqos.db
 import androidx.room.*
 
 @Entity(tableName = "ping_commands")
-data class CommandEntity(
+data class PingCommandEntity(
   @PrimaryKey(autoGenerate = true)
   var id: Int,
 
@@ -15,13 +15,13 @@ data class CommandEntity(
 @Dao
 interface PingCommandDao {
   @Query("SELECT * FROM ping_commands")
-  fun getAll(): List<CommandEntity>
+  fun getAll(): List<PingCommandEntity>
 
   @Query("SELECT * FROM ping_commands ORDER BY id DESC LIMIT 1")
-  fun getWithLatestId(): List<CommandEntity>
+  fun getWithLatestId(): List<PingCommandEntity>
 
   @Insert
-  fun insertAll(vararg command: CommandEntity)
+  fun insertAll(vararg command: PingCommandEntity)
 
   @Query("DELETE FROM ping_commands")
   fun deleteAll()

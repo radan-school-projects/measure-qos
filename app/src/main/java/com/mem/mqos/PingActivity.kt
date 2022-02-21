@@ -135,7 +135,7 @@ class PingActivity : DrawerBaseActivity() {
       //}.start()
       ////db.pingCommandDao().insertAll(CommandEntity(value = cmdStrA))
 
-      db.pingCommandDao().insertAll(CommandEntity(cmdStrA))
+      db.pingCommandDao().insertAll(PingCommandEntity(cmdStrA))
       val latestCommandRanEntity = db.pingCommandDao().getWithLatestId()[0] // ??
       db.pingFinalResultDao().insertAll(PingFinalResultEntity(latestCommandRanEntity.id, null, null)) //***
 
