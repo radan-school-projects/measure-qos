@@ -6,32 +6,32 @@
     >
 
     <TextView
-        android:text="seq #"
-        android:id="@+id/tvSeqN"
+        android:text="Transfer"
+        android:id="@+id/tvTransfer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         app:autoSizeTextType="uniform"
         />
     <TextView
-        android:text="size"
-        android:id="@+id/tvSize"
+        android:text="Bitrate"
+        android:id="@+id/tvBitrate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         app:autoSizeTextType="uniform"
         />
     <TextView
-        android:text="TTL"
-        android:id="@+id/tvTtl"
+        android:text="Retr"
+        android:id="@+id/tvRetr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         app:autoSizeTextType="uniform"
         />
     <TextView
-        android:text="RTT"
-        android:id="@+id/tvRtt"
+        android:text="Cwnd"
+        android:id="@+id/tvCwnd"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="1"
