@@ -9,8 +9,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.mem.mqos.databinding.*
-import com.mem.mqos.db.AppDatabase
-import com.mem.mqos.db.IperfCommandEntity
 import com.mem.mqos.utils.Utils
 import java.io.File
 import java.io.FileOutputStream
@@ -24,6 +22,8 @@ class IperfActivity : DrawerBaseActivity() {
 
   private lateinit var activityIperfBinding: ActivityIperfBinding
   private lateinit var iperfSettingsDialogBinding: IperfSettingsDialogBinding
+
+  //private val isFinalRes = false
 
   var iperfProcess: Process? = null
 
@@ -112,7 +112,7 @@ class IperfActivity : DrawerBaseActivity() {
       binding.tvTransfer.text = element.transfer
       binding.tvBitrate.text = element.bitrate
       binding.tvJitter.text = element.jitter
-      binding.tvDatagrams.text = "${element.datagramsLost}/${element.datagramsTotal} (${element.lossRate}%)"
+      binding.tvDatagrams.text = element.datagramsText
       activityIperfBinding.tableOutput.addView(binding.root)
     }
     if (element is String) {
@@ -183,14 +183,15 @@ class IperfActivity : DrawerBaseActivity() {
   )
   private val regexesServerUdp =  arrayOf(
     //"[  5]   0.00-5.00   sec   641 KBytes  1.05 Mbits/sec  0.244 ms  0/453 (0%)  receiver",
-    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec   (?<d>[0-9]+) KBytes  (?<e>[0-9.]+) Mbits/sec  (?<f>[0-9.]+) ms  (?<g>[0-9]+)/(?<h>[0-9]+) \\((?<i>[0-9]+)%\\)  receiver",
     "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec   (?<d>[0-9]+) KBytes  (?<e>[0-9.]+) Mbits/sec  (?<f>[0-9.]+) ms  (?<g>[0-9]+)/(?<h>[0-9]+) \\((?<i>[0-9]+)%\\)",
+    "\\[  (?<a>[0-9]+)\\]   (?<b>[0-9.]+)-(?<c>[0-9.]+)   sec   (?<d>[0-9]+) KBytes  (?<e>[0-9.]+) Mbits/sec  (?<f>[0-9.]+) ms  (?<g>[0-9]+)/(?<h>[0-9]+) \\((?<i>[0-9]+)%\\)  receiver",
+    //[  5]   0.00-5.00   sec   641 KBytes  1.05 Mbits/sec  0.975 ms  0/453 (0%)  receiver
   )
   private val regexesServer = arrayOf(
-    regexesServerTcp[0],
     regexesServerTcp[1],
-    regexesServerUdp[1],
+    regexesServerTcp[0],
     regexesServerUdp[0],
+    regexesServerUdp[1],
     dotString
   )
 
@@ -214,9 +215,14 @@ class IperfActivity : DrawerBaseActivity() {
   private val thUdpClientFin = IperfTableRowClientUdpFin("Transfer", "Bitrate", "Jitter", "replace this", "", "")
   // Lost/total datagrams
 
-  class IperfTableRowServerUdp(var transfer: String, var bitrate: String, var jitter: String, var datagramsLost: String, var datagramsTotal: String, var lossRate: String)
-  //class IperfTableRowServerUdpSeq(var transfer: String, var bitrate: String, var jitter: String, var datagramsLost: String, var datagramsTotal: String, var lossRate: String)
-  //class IperfTableRowServerUdpFin()
+  class IperfTableRowServerUdp(var transfer: String, var bitrate: String, var jitter: String, var datagramsLost: String, var datagramsTotal: String, var lossRate: String) {
+    var datagramsText = ""
+
+    init {
+      this@IperfTableRowServerUdp.datagramsText = "${datagramsLost}/${datagramsTotal} (${lossRate}%)"
+    }
+  }
+  private val thUdpServer = IperfTableRowServerUdp("Transfer", "Bitrate", "Jitter", "change this", "", "")
 
   internal inner class IperfProcess: Runnable {
     override fun run() {
@@ -248,19 +254,28 @@ class IperfActivity : DrawerBaseActivity() {
       // put in a thread ?
       //db.iperfCommandDao().insertAll(IperfCommandEntity(cmdStr))
 
-      val regexes = if (!params.isUdp)  {
-        when (params.mode) {
-          MODES.CLIENT -> regexesClientTcp
-          MODES.SERVER -> regexesServer
-          //MODES.SERVER -> regexesServerTcp
+      val regexes = if (params.mode == MODES.CLIENT) {
+        if (params.isUdp) {
+          regexesClientUdp
+        } else {
+          regexesClientTcp
         }
       } else {
-        when (params.mode) {
-          MODES.CLIENT -> regexesClientUdp
-          MODES.SERVER -> regexesServer
-          //MODES.SERVER -> regexesServerUdp
-        }
+        regexesServer
       }
+      //val regexes = if (!params.isUdp)  {
+      //  when (params.mode) {
+      //    MODES.CLIENT -> regexesClientTcp
+      //    MODES.SERVER -> regexesServer
+      //    //MODES.SERVER -> regexesServerTcp
+      //  }
+      //} else {
+      //  when (params.mode) {
+      //    MODES.CLIENT -> regexesClientUdp
+      //    MODES.SERVER -> regexesServer
+      //    //MODES.SERVER -> regexesServerUdp
+      //  }
+      //}
 
       cmd.add("--forceflush")
       val builder = ProcessBuilder()
@@ -276,6 +291,7 @@ class IperfActivity : DrawerBaseActivity() {
       myHandler.sendMessage(messageStart)
 
       var iteratorSeq = 0
+      var isFinalRes = false
 
       while (isThreadRunning) {
         //val currentStr = stdInput.readLine() ?: break // wrap into try catch block later
@@ -285,7 +301,7 @@ class IperfActivity : DrawerBaseActivity() {
           break
         } ?: break
         val currentStr = currentStr0.trim()
-        //Log.i("Current Str", currentStr)
+        Log.i("Current Str", currentStr)
 
         var pattern = ""
         for (rgx in regexes) {
@@ -298,6 +314,7 @@ class IperfActivity : DrawerBaseActivity() {
         //Log.i("okay?", (regexes.contentEquals(regexesServerUdp)).toString())
         //Log.i("PATTERN", pattern)
         if (pattern == "") continue
+        if (pattern == dotString) { isFinalRes = true }
 
         val matcher = parseIperfString(currentStr, pattern)
         matcher.find()
@@ -324,6 +341,8 @@ class IperfActivity : DrawerBaseActivity() {
             queue.add(IperfTableRowClientTcpSeq(transfer, bitrate, retr, cwnd))
           }
           regexesClientTcp[1] -> {// tcp client fin
+            isFinalRes = false
+
             queue.add(thTcpClientFin)
             val messageIperfAA0 = Message()
             messageIperfAA0.what = IPERF
@@ -333,6 +352,11 @@ class IperfActivity : DrawerBaseActivity() {
             val bitrate = "" + matcher.group(5)
             val retr = "" + matcher.group(6)
             queue.add(IperfTableRowClientTcpFin(transfer, bitrate, retr))
+            val messageIperfAA1 = Message()
+            messageIperfAA1.what = IPERF
+            myHandler.sendMessage(messageIperfAA1)
+
+            queue.add("===============")
           }
           regexesServerTcp[0] -> {// tcp server seq
             iteratorSeq++
@@ -348,6 +372,8 @@ class IperfActivity : DrawerBaseActivity() {
             queue.add(IperfTableRowServerTcp(transfer, bitrate))
           }
           regexesServerTcp[1] -> {// tcp server fin
+            isFinalRes = false
+
             iteratorSeq = 0
             queue.add(thTcpServer)
             val messageIperfAA0 = Message()
@@ -357,6 +383,15 @@ class IperfActivity : DrawerBaseActivity() {
             val transfer = "" + matcher.group(4)
             val bitrate = "" + matcher.group(5)
             queue.add(IperfTableRowServerTcp(transfer, bitrate))
+
+            val messageIperfAA1 = Message()
+            messageIperfAA0.what = IPERF
+            myHandler.sendMessage(messageIperfAA1)
+
+            queue.add("===============")
+            val messageIperfAA2 = Message()
+            messageIperfAA2.what = IPERF
+            myHandler.sendMessage(messageIperfAA2)
           }
           regexesClientUdp[2] -> {// udp client seq
             iteratorSeq++
@@ -373,6 +408,8 @@ class IperfActivity : DrawerBaseActivity() {
             queue.add(IperfTableRowClientUdpSeq(transfer, bitrate, datagramsTotal))
           }
           regexesClientUdp[1] -> {// udp client fin
+            isFinalRes = false
+
             queue.add(thUdpClientFin)
             val messageIperfAA0 = Message()
             messageIperfAA0.what = IPERF
@@ -385,9 +422,36 @@ class IperfActivity : DrawerBaseActivity() {
             val datagramsTotal = "" + matcher.group(8)
             val lossRate = "" + matcher.group(9)
             queue.add(IperfTableRowClientUdpFin(transfer, bitrate, jitter, datagramsLost, datagramsTotal, lossRate))
+
+            val messageIperfAA1 = Message()
+            messageIperfAA1.what = IPERF
+            myHandler.sendMessage(messageIperfAA1)
+
+            queue.add("===============")
           }
-          regexesClientUdp[0] -> { continue }
-          regexesServerUdp[1] -> {
+          regexesClientUdp[0] -> {
+            isFinalRes = false
+            continue
+          }
+          regexesServerUdp[0] -> {// udp server seq
+            iteratorSeq++
+            if (iteratorSeq <= 1) {
+              queue.add(thUdpServer)
+              val messageIperfAA0 = Message()
+              messageIperfAA0.what = IPERF
+              myHandler.sendMessage(messageIperfAA0)
+            }
+            var localFinIndicator = false
+            if (isFinalRes) {
+              localFinIndicator = true
+              iteratorSeq = 0
+              isFinalRes = false
+              queue.add(thUdpServer)
+              val messageIperfAA0 = Message()
+              messageIperfAA0.what = IPERF
+              myHandler.sendMessage(messageIperfAA0)
+            }
+
             val transfer = "" + matcher.group(4)
             val bitrate = "" + matcher.group(5)
             val jitter = "" + matcher.group(6)
@@ -395,16 +459,35 @@ class IperfActivity : DrawerBaseActivity() {
             val datagramsTotal = "" + matcher.group(8)
             val lossRate = "" + matcher.group(9)
             queue.add(IperfTableRowServerUdp(transfer, bitrate, jitter, datagramsLost, datagramsTotal, lossRate))
+
+
+            val messageIperfAA0 = Message()
+            messageIperfAA0.what = IPERF
+            myHandler.sendMessage(messageIperfAA0)
+
+            if (localFinIndicator) {
+              queue.add("===============")
+            }
           }
-          regexesServerUdp[0] -> {
-            val transfer = "" + matcher.group(4)
-            val bitrate = "" + matcher.group(5)
-            val jitter = "" + matcher.group(6)
-            val datagramsLost = "" + matcher.group(7)
-            val datagramsTotal = "" + matcher.group(8)
-            val lossRate = "" + matcher.group(9)
-            queue.add(IperfTableRowServerUdp(transfer, bitrate, jitter, datagramsLost, datagramsTotal, lossRate))
-          }
+          //regexesServerUdp[1] -> {// udp server fin
+          //  isFinalRes = false
+          //
+          //  iteratorSeq = 0
+          //  Log.i("Voila", iteratorSeq.toString())
+          //
+          //  queue.add(thUdpServer)
+          //  val messageIperfAA0 = Message()
+          //  messageIperfAA0.what = IPERF
+          //  myHandler.sendMessage(messageIperfAA0)
+          //
+          //  val transfer = "" + matcher.group(4)
+          //  val bitrate = "" + matcher.group(5)
+          //  val jitter = "" + matcher.group(6)
+          //  val datagramsLost = "" + matcher.group(7)
+          //  val datagramsTotal = "" + matcher.group(8)
+          //  val lossRate = "" + matcher.group(9)
+          //  queue.add(IperfTableRowServerUdp(transfer, bitrate, jitter, datagramsLost, datagramsTotal, lossRate))
+          //}
           //else -> { continue }
         }
 
@@ -479,6 +562,7 @@ class IperfActivity : DrawerBaseActivity() {
     allocateActivityTitle("${getString(R.string.app_name)}: iperf")
 
     thUdpClientFin.datagramsText = "Lost/Total Datagrams"
+    thUdpServer.datagramsText = "Lost/Total Datagrams"
     setupIperf()
     syncServerText()
 
